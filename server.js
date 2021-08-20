@@ -25,7 +25,8 @@ console.log(mongoose.connection.readyState);
 //create URL schema and model to store values into the db
 const userSchema = new Schema({
   username: { type: String, required: true },
-  id: {type: String, required: false}
+  id: {type: String, required: false},
+  exercises: {type: Array, required: false}
 });
 
 var Muser = mongoose.model("User", userSchema);
@@ -38,6 +39,28 @@ app.get('/api/users', function(req,res){
       userMap.push(Jsonuser)
     });
   res.send(userMap);
+  });
+});
+
+app.post('/api/users/:_id/exercises', (req, res)=>{
+  const userID = req.params._id;
+  if (!req.body.description || !req.body.duration) res.json({error: "Missing parameters"});
+  else {
+    var desc = req.body.description;
+    var dur = Number(req.body.duration);
+  }
+  if(!req.body.date) var dat = new Date().toString().slice(0,15);
+  else var dat = new Date(req.body.date).toString().slice(0,15);
+
+  Muser.findOne({id: userID}, (err,userfound)=>{
+    if(!userfound) res.json({error: "Invalid user ID."});
+    else{
+      var user = userfound.username;
+      var exercisetoset = userfound.exercises;
+      exercisetoset.push({"description":desc,"duration":dur,"date":dat});
+      Muser.findOneAndUpdate({id: userID},{exercises: exercisetoset}, {new: true});
+      res.json({_id: userID, username: user, date: dat, duration: dur,  description: desc});
+    }
   });
 });
 
@@ -55,6 +78,3 @@ app.post('/api/users', function (req,res){
   });
 });
 
-app.post('/api/users/:_id/exercises', (req, res)=>{
-  const userID = req.params._id;
-});
